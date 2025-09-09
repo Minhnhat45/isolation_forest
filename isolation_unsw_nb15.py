@@ -216,7 +216,6 @@ class IsolationForestModel:
             max_features=max_features,
             bootstrap=bootstrap,
             random_state=random_state,
-            n_jobs=-1,
         )
         self.model: IsolationForest | None = None
 
@@ -293,15 +292,15 @@ class Trainer:
         y_series = df["label"]
 
         # 2) Optional semi-supervised training (fit on normals only)
-        train_mask = slice(None)
-        if self.cfg.train_on_normals_only and y_series is not None:
-            y_bin = self.loader.make_binary_labels(y_series)
-            train_mask = (y_bin == 0).values
-            logger.info(f"Training on normals only: {train_mask.sum()} rows (of {len(X_df)})")
+        # train_mask = slice(None)
+        # if self.cfg.train_on_normals_only and y_series is not None:
+        #     y_bin = self.loader.make_binary_labels(y_series)
+        #     train_mask = (y_bin == 0).values
+        #     logger.info(f"Training on normals only: {train_mask.sum()} rows (of {len(X_df)})")
 
-        # 3) Build & fit preprocessing on training subset, then transform all
-        X_train_fit = X_df.iloc[train_mask] if isinstance(train_mask, np.ndarray) else X_df
-        X_train = self.preproc.fit_transform(X_train_fit)
+        # # 3) Build & fit preprocessing on training subset, then transform all
+        # X_train_fit = X_df.iloc[train_mask] if isinstance(train_mask, np.ndarray) else X_df
+        X_train = self.preproc.fit_transform(X_df)
         X_all = self.preproc.transform(X_df)
 
         # 4) If labels present and contamination not set, infer it from prevalence (on all data)
@@ -327,7 +326,6 @@ class Trainer:
         # 8) Persist artifacts
         self._ensure_artifacts_dir()
         joblib.dump(self.model, os.path.join(self.cfg.artifacts_dir, "model.joblib"))
-        joblib.dump(self.preproc, os.path.join(self.cfg.artifacts_dir, "preprocessor.joblib"))
 
         if metrics:
             with open(os.path.join(self.cfg.artifacts_dir, "eval_metrics.json"), "w") as f:
